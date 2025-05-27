@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>YourWay</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6; /* Світло-сірий фон */
+            color: #333; /* Основний колір тексту */
+            line-height: 1.5; /* Трохи менший міжрядковий інтервал */
+            display: flex; /* Використовуємо flexbox для розміщення елементів */
+            flex-direction: column; /* Розміщуємо елементи вертикально */
+            min-height: 100vh; /* Мінімальна висота - вся висота вікна */
+        }
+
+        #controls {
+            padding: 15px; /* Менші відступи */
+            background-color: #fff;
+            margin-bottom: 10px; /* Менший відступ знизу */
+            border-radius: 6px; /* Трохи менші заокруглення */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Менша тінь */
+            display: flex; /* Розміщуємо елементи в один ряд */
+            gap: 10px; /* Відступ між елементами */
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #route-controls {
+            padding: 15px; /* Менші відступи */
+            background-color: #fff;
+            margin-bottom: 10px; /* Менший відступ знизу */
+            border-radius: 6px; /* Трохи менші заокруглення */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Менша тінь */
+            display: flex;
+            gap: 10px; /* Менший відступ між елементами */
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="text"], select {
+            padding: 8px; /* Менші відступи */
+            border: 1px solid #ccc;
+            border-radius: 3px; /* Менші заокруглення */
+            font-size: 14px; /* Менший розмір шрифту */
+            flex-grow: 1;
+            /* max-width: 200px; */ /* Заберемо обмеження, щоб елементи краще розміщувалися */
+        }
+
+        /* Стилі для поля введення назви місця */
+        #placeName {
+            flex-grow: 0; /* Не розширювати поле назви місця */
+            max-width: 150px; /* Обмежена ширина */
+        }
+
+        #searchInput {
+            flex-grow: 1; /* Поле пошуку може займати більше місця */
+            max-width: 200px; /* Обмежена максимальна ширина */
+        }
+
+        button {
+            background-color: #007bff; /* Основний синій колір */
+            color: white;
+            padding: 8px 12px; /* Менші відступи */
+            border: none;
+            border-radius: 3px; /* Менші заокруглення */
+            cursor: pointer;
+            font-size: 14px; /* Менший розмір шрифту */
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px; /* Менший відступ між іконкою та текстом */
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #map {
+            height: 100vh; /* Займає всю висоту вікна */
+            width: 100%;
+            border-radius: 0; /* Забираємо заокруглення, якщо карта на весь екран */
+            box-shadow: none; /* Забираємо тінь, якщо карта на весь екран */
+            flex-grow: 1; /* Карта розширюється, займаючи вільний простір */
+        }
+
+        #route-details {
+            display: none; /* Приховуємо бічну панель */
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="text" id="searchInput" placeholder="Пошук місця">
+        <button onclick="searchLocation()">🔍 Пошук</button>
+        <input type="text" id="placeName" placeholder="Назва місця">
+        <button onclick="addMarkerAtClick()">🌸 Додати позначку</button>
+    </div>
+    <div id="route-controls">
+        <button id="selectStartPointBtn">🌷 Початок</button>
+        <button id="selectEndPointBtn">🌹 Кінець</button>
+        <button id="addWaypointBtn">🌼 Проміжна</button>
+        <button onclick="calculateRoute()">🌻 Маршрут</button>
+        <button onclick="clearRoute()">🌺 Очистити</button>
+        <button onclick="markVisitedMode()" style="display: none;">🏵️ Відвідано</button>
+    </div>
+    <div id="map"></div>
+    <div id="route-details"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script>
+        let map = L.map('map').setView([49.8419, 24.0315], 13); // Центр на Львів
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        let waypoints = []; // Масив для зберігання всіх точок маршруту
+        let routeLayer = null; // Змінна для зберігання шару маршруту
+        let markers = []; // Масив для зберігання всіх доданих маркерів
+        let addingWaypoint = false;
+
+        document.getElementById('selectStartPointBtn').addEventListener('click',
+         function() {
+            addingWaypoint = false;
+            map.once('click', function(e) {
+                waypoints = [L.latLng(e.latlng.lat, e.latlng.lng)];
+                addWaypointMarker(e.latlng, 'Початкова точка', 'green');
+            });
+            alert('Клікніть на карті, щоб обрати початкову точку.');
+        });
+
+        document.getElementById('selectEndPointBtn').addEventListener('click', 
+        function() {
+            addingWaypoint = false;
+            map.once('click', function(e) {
+                if (waypoints.length === 0) {
+                    alert('Спочатку оберіть початкову точку.');
+                    return;
+                }
+                waypoints.push(L.latLng(e.latlng.lat, e.latlng.lng));
+                addWaypointMarker(e.latlng, 'Кінцева точка', 'red');
+            });
+            alert('Клікніть на карті, щоб обрати кінцеву точку.');
+        });
+
+        document.getElementById('addWaypointBtn').addEventListener('click', 
+        function() {
+            addingWaypoint = true;
+            map.once('click', function(e) {
+                if (waypoints.length === 0) {
+                    alert('Спочатку оберіть початкову точку.');
+                    return;
+                }
+                waypoints.splice(waypoints.length - 1, 0, L.latLng(e.latlng.lat, e.latlng.lng)); // Додаємо перед останньою точкою
+                addWaypointMarker(e.latlng, 'Проміжна точка', 'blue');
+            });
+            alert('Клікніть на карті, щоб додати проміжну точку.');
+        });
+
+        function addWaypointMarker(latlng, title, color) {
+            const iconUrl = `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`;
+            const marker = L.marker(latlng, {icon: L.icon({iconUrl: iconUrl, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], 
+            iconAnchor: [12, 41], 
+            popupAnchor: [1, -34], 
+            shadowSize: [41, 41]})}).addTo(map).bindPopup(title).openPopup();
+            markers.push(marker);
+        }
+
+        function addMarkerAtClick() {
+            addingWaypoint = false;
+            map.once('click', function(e) {
+                const name = document.getElementById('placeName').value || 'Нове місце';
+                const marker = L.marker(e.latlng).addTo(map).bindPopup(`<b>${name}</b><br>Широта: ${e.latlng.lat.toFixed(4)}<br>Довгота: ${e.latlng.lng.toFixed(4)}`).openPopup();
+                markers.push(marker);
+                document.getElementById('placeName').value = '';
+            });
+            alert('Клікніть на карті, щоб додати позначку.');
+        }
+
+        async function calculateRoute() {
+            if (waypoints.length >= 2) {
+                const points = waypoints.map(wp => `${wp.lng},${wp.lat}`).join(';');
+                const url = `https://router.project-osrm.org/route/v1/foot/${points}?overview=full&geometries=geojson`;
+
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    console.log("Дані маршруту від OSRM:", data);
+
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]); // Leaflet використовує [lat, lng]
+
+                        if (routeLayer) {
+                            map.removeLayer(routeLayer);
+                        }
+
+                        // Додаємо шар з лінією маршруту на карту
+                        routeLayer = L.polyline(coordinates, { color: 'blue', weight: 5 }).addTo(map);
+
+                        // (Опціонально) Відцентрувати карту на маршруті
+                        // map.fitBounds(L.latLngBounds(coordinates));
+
+                    } else {
+                        alert("Маршрут не знайдено.");
+                    }
+
+                } catch (error) {
+                    console.error("Помилка отримання маршруту:", error);
+                    alert("Не вдалося отримати маршрут.");
+                }
+
+            } else {
+                alert('Будь ласка, оберіть початкову та кінцеву точки (мінімум дві) для прокладання маршруту.');
+            }
+        }
+
+        function clearRoute() {
+            const shouldKeepMarkers = confirm("Залишити позначки на карті?");
+            if (!shouldKeepMarkers) {
+                markers.forEach(marker => map.removeLayer(marker));
+                markers = [];
+                waypoints = [];
+            } else {
+                // Просто очищаємо маршрут, але залишаємо маркери
+                waypoints = [];
+            }
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+                routeLayer = null;
+            }
+        }
+
+        function markVisitedMode() {
+            addingWaypoint = false;
+            let isMarkingVisited = false;
+            isMarkingVisited = !isMarkingVisited;
+            if (isMarkingVisited) {
+                alert("Режим відмітки відвіданих місць увімкнено. Клікайте на карті, щоб додати позначки.");
+            } else {
+                alert("Режим відмітки відвіданих місць вимкнено. Кліки на карті знову додають звичайні позначки.");
+            }
+        }
+
+        async function searchLocation() {
+            const searchText = document.getElementById('searchInput').value;
+            if (!searchText) {
+                alert('Будь ласка, введіть назву місця для пошуку.');
+                return;
+            }
+
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${searchText}&format=json&limit=1`;
+
+            try {
+                const response = await fetch(nominatimUrl);
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    map.setView([lat, lon], 15); // Переміщуємо карту до знайденого місця з зумом 15
+                    L.marker([lat, lon]).addTo(map).bindPopup(`Знайдено: ${result.display_name}`).openPopup();
+                } else {
+                    alert(`Нічого не знайдено за запитом: "${searchText}"`);
+                }
+
+            } catch (error) {
+                console.error('Помилка пошуку:', error);
+                alert('Не вдалося виконати пошук.');
+            }
+        }
+    </script>
+</body>
+</html>

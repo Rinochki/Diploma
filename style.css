@@ -1,0 +1,212 @@
+/* General Styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1, h2, h3 {
+    color: #333;
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 40px 0;
+}
+
+/* Map Section */
+.map-and-controls-wrapper {
+    display: flex;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    gap: 20px;
+}
+
+.map-section, .route-builder {
+    flex: 1; /* Each takes equal space */
+    min-width: 300px; /* Minimum width before wrapping */
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+#map {
+    height: 400px; /* Або будь-яка інша бажана висота */
+    width: 100%;  /* Або фіксована ширина */
+    border: 1px solid #ddd; /* Можна додати для візуалізації контейнера */
+}
+
+.map-controls, .route-builder, .data-forms > div {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.map-controls input[type="text"],
+.data-forms input[type="text"],
+.data-forms input[type="email"],
+.data-forms input[type="password"],
+.data-forms textarea,
+.data-forms select,
+.route-builder input[type="text"],
+.route-builder textarea,
+.route-builder select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.map-controls button,
+.data-forms button,
+.route-builder button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+
+.map-controls button:hover,
+.data-forms button:hover,
+.route-builder button:hover {
+    background-color: #0056b3;
+}
+
+#currentCoordsDisplay {
+    background-color: #e9ecef;
+    padding: 8px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* Route Builder */
+#routePointsList {
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    padding: 10px;
+    min-height: 80px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.route-point-item {
+    padding: 5px 0;
+    border-bottom: 1px dashed #eee;
+}
+.route-point-item:last-child {
+    border-bottom: none;
+}
+
+/* Data Management */
+.data-forms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.form-card {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.form-card h3 {
+    margin-top: 0;
+    color: #007bff;
+}
+
+/* Data Display Sections */
+.data-container {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.02);
+}
+
+.data-container p {
+    color: #666;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.data-item {
+    background-color: #e9f7ff; /* Light blue for items */
+    padding: 10px 15px;
+    border: 1px solid #cfe2ff;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 10px;
+}
+
+.data-item:last-child {
+    margin-bottom: 0;
+}
+
+.data-item strong {
+    color: #0056b3;
+}
+
+.delete-btn, .view-route-on-map-btn, .view-location-on-map-btn {
+    background-color: #dc3545; /* Red for delete */
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s ease;
+}
+
+.view-route-on-map-btn, .view-location-on-map-btn {
+    background-color: #28a745; /* Green for view on map */
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+.view-route-on-map-btn:hover, .view-location-on-map-btn:hover {
+    background-color: #218838;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .map-and-controls-wrapper {
+        flex-direction: column;
+    }
+    .data-forms {
+        grid-template-columns: 1fr;
+    }
+}
